@@ -2,30 +2,19 @@ package org.jetlinks.community.network.http.client;
 
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClientRequest;
-import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.RequestOptions;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.jetlinks.community.network.DefaultNetworkType;
 import org.jetlinks.community.network.NetworkType;
 import org.jetlinks.community.network.http.HttpMessage;
-import org.jetlinks.core.message.codec.http.HttpRequestMessage;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.core.publisher.Sinks;
-
-import java.util.Objects;
 
 @Slf4j
 public class VertxHttpClient implements HttpClient {
 
     @Getter
     private final String id;
-
-    private final Sinks.Many<HttpMessage> processor = Sinks
-        .many()
-        .multicast()
-        .onBackpressureBuffer(Integer.MAX_VALUE);
 
     private io.vertx.core.http.HttpClient client;
 
@@ -62,11 +51,6 @@ public class VertxHttpClient implements HttpClient {
     @Override
     public boolean isAutoReload() {
         return false;
-    }
-
-    @Override
-    public Flux<HttpMessage> handleMessage() {
-        return processor.asFlux();
     }
 
     @Override

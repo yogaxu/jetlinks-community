@@ -1,6 +1,5 @@
 package org.jetlinks.community.network.http.device;
 
-import io.vertx.core.http.HttpMethod;
 import lombok.extern.slf4j.Slf4j;
 import org.jetlinks.community.gateway.AbstractDeviceGateway;
 import org.jetlinks.community.network.DefaultNetworkType;
@@ -24,10 +23,8 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.atomic.LongAdder;
 
 @Slf4j
 public class HttpServerDeviceGateway extends AbstractDeviceGateway {
@@ -39,10 +36,6 @@ public class HttpServerDeviceGateway extends AbstractDeviceGateway {
     private final ProtocolSupports supports;
 
     private final DeviceRegistry registry;
-
-    private final DeviceSessionManager sessionManager;
-
-    private final LongAdder counter = new LongAdder();
 
     private Disposable disposable;
 
@@ -59,7 +52,6 @@ public class HttpServerDeviceGateway extends AbstractDeviceGateway {
         this.routes = routes;
         this.supports = supports;
         this.registry = registry;
-        this.sessionManager = sessionManager;
         this.helper = new DeviceGatewayHelper(registry, sessionManager, clientMessageHandler);
         this.server = server;
     }
@@ -100,12 +92,12 @@ public class HttpServerDeviceGateway extends AbstractDeviceGateway {
         disposable = server
             .handleMessage()
             .subscribeOn(Schedulers.parallel())
-            .filter(udp -> isStarted())
             .flatMap(message -> {
                 AtomicReference<DeviceSession> sessionRef = new AtomicReference<>();
                 sessionRef.set(new HttpDeviceSession(null, server, getTransport(), monitor));
 
                 return getProtocol(message.getUrl())
+                    .filter(http -> isStarted())
                     .flatMap(pt -> pt.getMessageCodec(getTransport()))
                     .flatMapMany(codec -> codec.decode(
                         FromDeviceMessageContext.of(sessionRef.get(), message, registry))

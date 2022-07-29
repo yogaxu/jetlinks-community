@@ -29,7 +29,7 @@ spring:
     url: r2dbc:postgresql://localhost:5432/jetlinks
 #    url: r2dbc:mysql://localhost:3306/jetlinks?ssl=false&serverZoneId=Asia/Shanghai # 修改了配置easyorm相关配置也要修改
     username: postgres
-    password: jetlinks
+    password: root
     pool:
       max-size: 32
       max-idle-time: 2m # 值不能大于mysql server的wait_timeout配置
@@ -134,9 +134,9 @@ logging:
     org.springframework: warn
     org.jetlinks.community.device.message.writer: warn
     org.jetlinks.community.timeseries.micrometer: warn
-    org.jetlinks.community.elastic.search.service: trace
-    org.jetlinks.community.elastic.search.service.reactive: trace
-    org.jetlinks.community.network: warn
+    org.jetlinks.community.elastic.search.service: debug
+    org.jetlinks.community.elastic.search.service.reactive: debug
+    org.jetlinks.community.network: debug
     io.vertx.mqtt.impl: warn
     #    org.springframework.data.elasticsearch.client: trace
     #    org.elasticsearch: error

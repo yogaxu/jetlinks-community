@@ -1,11 +1,10 @@
-package org.jetlinks.community.network.udp.device;
+package org.jetlinks.community.network.coap.device;
 
 import lombok.extern.slf4j.Slf4j;
 import org.jetlinks.community.gateway.AbstractDeviceGateway;
 import org.jetlinks.community.network.DefaultNetworkType;
 import org.jetlinks.community.network.NetworkType;
-import org.jetlinks.community.network.udp.UdpMessage;
-import org.jetlinks.community.network.udp.local.UdpLocal;
+import org.jetlinks.community.network.coap.server.CoapServer;
 import org.jetlinks.community.network.utils.DeviceGatewayHelper;
 import org.jetlinks.core.ProtocolSupport;
 import org.jetlinks.core.ProtocolSupports;
@@ -23,16 +22,10 @@ import reactor.core.scheduler.Schedulers;
 
 import java.util.concurrent.atomic.AtomicReference;
 
-
-/**
- * UDP设备网关
- *
- * @author yoga_xu
- */
 @Slf4j
-public class UdpDeviceGateway extends AbstractDeviceGateway {
+public class CoapServerDeviceGateway extends AbstractDeviceGateway {
 
-    private final UdpLocal udpLocal;
+    private final CoapServer server;
 
     private final String protocol;
 
@@ -44,19 +37,23 @@ public class UdpDeviceGateway extends AbstractDeviceGateway {
 
     private final DeviceGatewayHelper helper;
 
-    public UdpDeviceGateway(String id,
-                            String protocol,
-                            ProtocolSupports supports,
-                            DeviceRegistry registry,
-                            DecodedClientMessageHandler clientMessageHandler,
-                            DeviceSessionManager sessionManager,
-                            UdpLocal udpLocal) {
+    public CoapServerDeviceGateway(String id,
+                                   String protocol,
+                                   ProtocolSupports supports,
+                                   DeviceRegistry registry,
+                                   DecodedClientMessageHandler clientMessageHandler,
+                                   DeviceSessionManager sessionManager,
+                                   CoapServer server) {
         super(id);
         this.protocol = protocol;
         this.supports = supports;
         this.registry = registry;
-        this.udpLocal = udpLocal;
+        this.server = server;
         this.helper = new DeviceGatewayHelper(registry, sessionManager, clientMessageHandler);
+    }
+
+    public Mono<ProtocolSupport> getProtocol() {
+        return supports.getProtocol(protocol);
     }
 
     @Override
@@ -72,54 +69,53 @@ public class UdpDeviceGateway extends AbstractDeviceGateway {
         return Mono.fromRunnable(this::doStart);
     }
 
-    @Override
-    public Transport getTransport() {
-        return DefaultTransport.UDP;
-    }
-
-    @Override
-    public NetworkType getNetworkType() {
-        return DefaultNetworkType.UDP;
-    }
-
-    public Mono<ProtocolSupport> getProtocol() {
-        return supports.getProtocol(protocol);
-    }
-
     private void doStart() {
         if (disposable != null) {
             disposable.dispose();
         }
-        disposable = udpLocal
+
+        disposable = server
             .handleMessage()
             .subscribeOn(Schedulers.parallel())
-            .filter(udp -> isStarted())
             .flatMap(message -> {
+                log.debug("handle coap msg: {}", message.payloadAsString());
+
                 AtomicReference<DeviceSession> sessionRef = new AtomicReference<>();
-                sessionRef.set(new UdpDeviceSession(null, udpLocal, getTransport(), monitor));
+                sessionRef.set(new CoapDeviceSession(null, server, getTransport(), monitor));
 
                 return getProtocol()
+                    .filter(coap -> isStarted())
                     .flatMap(pt -> pt.getMessageCodec(getTransport()))
                     .flatMapMany(codec -> codec.decode(
                         FromDeviceMessageContext.of(sessionRef.get(), message, registry)
                     ))
                     .cast(DeviceMessage.class)
+                    .onErrorResume(error -> {
+                        log.error("device msg cast error: ", error);
+                        return Mono.empty();
+                    })
                     .flatMap(deviceMessage -> {
                         monitor.receivedMessage();
                         return helper
                             .handleDeviceMessage(
                                 deviceMessage,
-                                device -> new UdpDeviceSession(device, udpLocal, getTransport(), monitor),
+                                device -> new CoapDeviceSession(device, server, getTransport(), monitor),
                                 sessionRef::set,
                                 () -> log.warn("The device[{}] in the message body does not exist:{}", deviceMessage.getDeviceId(), deviceMessage)
                             )
                             .thenReturn(deviceMessage);
                     });
             })
-            .onErrorResume(error -> {
-                log.error(error.getMessage(), error.getCause());
-                return Mono.empty();
-            })
             .subscribe();
+    }
+
+    @Override
+    public Transport getTransport() {
+        return DefaultTransport.CoAP;
+    }
+
+    @Override
+    public NetworkType getNetworkType() {
+        return DefaultNetworkType.COAP_SERVER;
     }
 }

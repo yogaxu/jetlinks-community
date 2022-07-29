@@ -7,8 +7,6 @@ import reactor.core.publisher.Mono;
 
 public interface HttpClient extends Network {
 
-    Flux<HttpMessage> handleMessage();
-
     Mono<Boolean> send(HttpMessage message);
 
 }

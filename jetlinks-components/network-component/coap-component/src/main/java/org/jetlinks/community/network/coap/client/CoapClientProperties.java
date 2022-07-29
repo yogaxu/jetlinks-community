@@ -1,4 +1,4 @@
-package org.jetlinks.community.network.coap.server;
+package org.jetlinks.community.network.coap.client;
 
 import lombok.*;
 import org.jetlinks.community.ValueObject;
@@ -11,19 +11,18 @@ import java.util.Map;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CoapServerProperties implements ValueObject {
+public class CoapClientProperties implements ValueObject {
 
     private String id;
 
     private Map<String, Object> parserConfiguration = new HashMap<>();
 
-    private String address;
+    private String url;
 
-    private int port;
+    // 超时时间 ms
+    private long timeout;
 
     private boolean enableDtls;
-
-    private String privateKeyAlias;
 
     private String certId;
 
