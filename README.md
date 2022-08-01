@@ -2,13 +2,13 @@
 
 ##### 目前进度
 - [x] WebSocket服务
-- [ ] WebSocket服务调试器
+- [x] WebSocket服务调试器
 - [x] WebSocket客户端
-- [ ] WebSocket客户端调试器
+- [x] WebSocket客户端调试器
 - [x] UDP
-- [ ] UDP调试器
+- [x] UDP调试器
 - [x] Http服务
-- [ ] Http服务调试器
+- [x] Http服务调试器
 - [x] Http客户端
 - [x] Http客户端调试器
 - [x] CoAP服务

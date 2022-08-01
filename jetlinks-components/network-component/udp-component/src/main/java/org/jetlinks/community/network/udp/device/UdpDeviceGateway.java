@@ -4,7 +4,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.jetlinks.community.gateway.AbstractDeviceGateway;
 import org.jetlinks.community.network.DefaultNetworkType;
 import org.jetlinks.community.network.NetworkType;
-import org.jetlinks.community.network.udp.UdpMessage;
 import org.jetlinks.community.network.udp.local.UdpLocal;
 import org.jetlinks.community.network.utils.DeviceGatewayHelper;
 import org.jetlinks.core.ProtocolSupport;
@@ -93,12 +92,12 @@ public class UdpDeviceGateway extends AbstractDeviceGateway {
         disposable = udpLocal
             .handleMessage()
             .subscribeOn(Schedulers.parallel())
-            .filter(udp -> isStarted())
             .flatMap(message -> {
                 AtomicReference<DeviceSession> sessionRef = new AtomicReference<>();
-                sessionRef.set(new UdpDeviceSession(null, udpLocal, getTransport(), monitor));
+                sessionRef.set(new UdpDeviceSession(null, udpLocal, getTransport(), monitor, message));
 
                 return getProtocol()
+                    .filter(udp -> isStarted())
                     .flatMap(pt -> pt.getMessageCodec(getTransport()))
                     .flatMapMany(codec -> codec.decode(
                         FromDeviceMessageContext.of(sessionRef.get(), message, registry)
@@ -109,7 +108,7 @@ public class UdpDeviceGateway extends AbstractDeviceGateway {
                         return helper
                             .handleDeviceMessage(
                                 deviceMessage,
-                                device -> new UdpDeviceSession(device, udpLocal, getTransport(), monitor),
+                                device -> new UdpDeviceSession(device, udpLocal, getTransport(), monitor, message),
                                 sessionRef::set,
                                 () -> log.warn("The device[{}] in the message body does not exist:{}", deviceMessage.getDeviceId(), deviceMessage)
                             )

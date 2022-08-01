@@ -3,6 +3,7 @@ package org.jetlinks.community.network.udp.device;
 import lombok.Getter;
 import lombok.Setter;
 import org.jetlinks.community.gateway.monitor.DeviceGatewayMonitor;
+import org.jetlinks.community.network.udp.UdpMessage;
 import org.jetlinks.community.network.udp.local.UdpLocal;
 import org.jetlinks.core.device.DeviceOperator;
 import org.jetlinks.core.message.codec.EncodedMessage;
@@ -23,8 +24,7 @@ public class UdpDeviceSession implements DeviceSession {
     @Setter
     private DeviceOperator operator;
 
-    @Setter
-    private UdpLocal udpLocal;
+    private final UdpLocal udpLocal;
 
     @Getter
     private final Transport transport;
@@ -38,14 +38,18 @@ public class UdpDeviceSession implements DeviceSession {
 
     private final DeviceGatewayMonitor monitor;
 
+    private final UdpMessage message;
+
     public UdpDeviceSession(DeviceOperator operator,
                             UdpLocal udpLocal,
                             Transport transport,
-                            DeviceGatewayMonitor monitor) {
+                            DeviceGatewayMonitor monitor,
+                            UdpMessage message) {
         this.operator = operator;
         this.udpLocal = udpLocal;
         this.transport = transport;
         this.monitor = monitor;
+        this.message = message;
     }
 
     @Override
@@ -74,7 +78,7 @@ public class UdpDeviceSession implements DeviceSession {
     @Override
     public Mono<Boolean> send(EncodedMessage encodedMessage) {
         monitor.sentMessage();
-        return udpLocal.send(encodedMessage);
+        return udpLocal.send(message.getRemoteAddress(), message.getRemotePort(), encodedMessage);
     }
 
     @Override

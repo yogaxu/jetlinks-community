@@ -3,7 +3,6 @@ package org.jetlinks.community.network.udp.local;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.datagram.DatagramSocket;
 import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.jetlinks.community.network.DefaultNetworkType;
 import org.jetlinks.community.network.NetworkType;
@@ -28,14 +27,6 @@ public class VertxUdpLocal implements UdpLocal {
         .onBackpressureBuffer(Integer.MAX_VALUE);
 
     DatagramSocket socket;
-
-    @Getter
-    @Setter
-    private String remoteAddress = "";
-
-    @Getter
-    @Setter
-    private int remotePort = 0;
 
     public VertxUdpLocal(String id) {
         this.id = id;
@@ -77,9 +68,12 @@ public class VertxUdpLocal implements UdpLocal {
             shutdown();
         }
         this.socket = socket;
-        socket.handler(packet -> {
-            processor.tryEmitNext(new UdpMessage(packet.data().getByteBuf()));
-        });
+
+        socket.handler(packet -> processor
+            .tryEmitNext(
+                new UdpMessage(packet.data().getByteBuf(), packet.sender().host(), packet.sender().port())
+            )
+        );
     }
 
     @Override
@@ -88,11 +82,12 @@ public class VertxUdpLocal implements UdpLocal {
     }
 
     @Override
-    public Mono<Boolean> send(EncodedMessage encodedMessage) {
+    public Mono<Boolean> send(String remoteAddress, int remotePort, EncodedMessage encodedMessage) {
         return Mono
             .create((sink) -> {
                 Buffer buffer = Buffer.buffer(encodedMessage.getPayload());
-                socket.send(buffer, getRemotePort(), getRemoteAddress(), result -> {
+
+                socket.send(buffer, remotePort, remoteAddress, result -> {
 //                    keepAlive();
                     if (result.succeeded()) {
                         sink.success();

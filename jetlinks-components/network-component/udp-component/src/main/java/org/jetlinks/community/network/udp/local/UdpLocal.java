@@ -14,5 +14,5 @@ import reactor.core.publisher.Mono;
 public interface UdpLocal extends Network {
     Flux<UdpMessage> handleMessage();
 
-    Mono<Boolean> send(EncodedMessage encodedMessage);
+    Mono<Boolean> send(String remoteAddress, int remotePort, EncodedMessage encodedMessage);
 }

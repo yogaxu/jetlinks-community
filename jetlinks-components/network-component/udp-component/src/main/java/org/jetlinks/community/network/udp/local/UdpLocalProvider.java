@@ -8,7 +8,6 @@ import org.hswebframework.web.bean.FastBeanCopier;
 import org.jetlinks.community.network.*;
 import org.jetlinks.core.metadata.ConfigMetadata;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
 import reactor.core.publisher.Mono;
 
 import javax.annotation.Nonnull;
@@ -57,10 +56,6 @@ public class UdpLocalProvider implements NetworkProvider<UdpLocalProperties> {
     private void initUdpLocal(VertxUdpLocal udpLocal, UdpLocalProperties properties) {
         DatagramSocket socket = vertx.createDatagramSocket(properties.getOptions());
         udpLocal.setSocket(socket);
-        if (StringUtils.hasText(properties.getRemoteAddress())) {
-            udpLocal.setRemoteAddress(properties.getRemoteAddress());
-            udpLocal.setRemotePort(properties.getRemotePort());
-        }
         socket.listen(properties.getLocalPort(), properties.getLocalAddress(), result -> {
             if (result.succeeded()) {
                 log.info("udp local startup on {}", result.result().localAddress().port());
